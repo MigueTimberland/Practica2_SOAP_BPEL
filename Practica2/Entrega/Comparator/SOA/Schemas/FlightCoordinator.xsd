@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?> 
+<schema attributeFormDefault="unqualified"
+	elementFormDefault="qualified"
+	targetNamespace="http://xmlns.oracle.com/JAPM/Comparator/Core"
+	xmlns="http://www.w3.org/2001/XMLSchema">
+	<element name="process">
+		<complexType>
+			<sequence>
+				<element name="name" type="string"/>
+    <element name="start_date" type="date"/>
+    <element name="end_date" type="date"/>
+    <element name="aeropuerto" type="string"/>
+   </sequence>
+		</complexType>
+	</element>
+	<element name="processResponse">
+		<complexType>
+			<sequence>
+				<element name="name" type="string"/>
+    <element name="employee_class" type="string"/>
+    <element name="company" type="string"/>
+    <element name="price" type="float"/>
+   </sequence>
+		</complexType>
+	</element>
+</schema>

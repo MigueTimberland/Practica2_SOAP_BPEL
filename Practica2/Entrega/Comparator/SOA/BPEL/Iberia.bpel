@@ -1,0 +1,167 @@
+<?xml version = "1.0" encoding = "UTF-8" ?>
+<!--
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  Oracle JDeveloper BPEL Designer 
+  
+  Created: Fri Dec 29 17:46:41 CET 2023
+  Author:  padul
+  Type: BPEL 2.0 Process
+  Purpose: Synchronous BPEL Process
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+-->
+<process name="Iberia"
+               targetNamespace="http://xmlns.oracle.com/JAPM/Comparator/Iberia"
+               xmlns="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+               xmlns:client="http://xmlns.oracle.com/JAPM/Comparator/Iberia"
+               xmlns:ora="http://schemas.oracle.com/xpath/extension"
+               xmlns:ui="http://xmlns.oracle.com/soa/designer"
+               xmlns:bpelx="http://schemas.oracle.com/bpel/extension"
+         xmlns:bpel="http://docs.oasis-open.org/wsbpel/2.0/process/executable"
+         xmlns:oraext="http://www.oracle.com/XSL/Transform/java/oracle.tip.pc.services.functions.ExtFunc"
+         xmlns:bpm="http://xmlns.oracle.com/bpmn20/extensions"
+         xmlns:xp20="http://www.oracle.com/XSL/Transform/java/oracle.tip.pc.services.functions.Xpath20"
+         xmlns:ess="http://xmlns.oracle.com/scheduler" xmlns:hwf="http://xmlns.oracle.com/bpel/workflow/xpath"
+         xmlns:xref="http://www.oracle.com/XSL/Transform/java/oracle.tip.xref.xpath.XRefXPathFunctions"
+         xmlns:dvm="http://www.oracle.com/XSL/Transform/java/oracle.tip.dvm.LookupValue"
+         xmlns:bpws="http://schemas.xmlsoap.org/ws/2003/03/business-process/"
+         xmlns:xdk="http://schemas.oracle.com/bpel/extension/xpath/function/xdk"
+         xmlns:ids="http://xmlns.oracle.com/bpel/services/IdentityService/xpath"
+         xmlns:ldap="http://schemas.oracle.com/xpath/extension/ldap" xml:id="id_1">
+
+    <import ui:processWSDL="true" namespace="http://xmlns.oracle.com/JAPM/Comparator/Iberia" location="../WSDLs/Iberia.wsdl" importType="http://schemas.xmlsoap.org/wsdl/"
+            xml:id="id_2"/>
+    <!-- 
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        PARTNERLINKS                                                      
+        List of services participating in this BPEL process               
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    --> 
+  <partnerLinks xml:id="id_3">
+    <!-- 
+      The 'client' role represents the requester of this service. It is 
+      used for callback. The location and correlation information associated
+      with the client role are automatically set using WS-Addressing.
+    -->
+    <partnerLink name="iberia_client" partnerLinkType="client:Iberia" myRole="IberiaProvider" xml:id="id_4"/>
+  </partnerLinks>
+
+  <!-- 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      VARIABLES                                                        
+      List of messages and XML documents used within this BPEL process 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  <variables xml:id="id_5">
+    <!-- Reference to the message passed as input during initiation -->
+    <variable name="inputVariable" messageType="client:IberiaRequestMessage" xml:id="id_6"/>
+
+    <!-- Reference to the message that will be returned to the requester-->
+    <variable name="outputVariable" messageType="client:IberiaResponseMessage" xml:id="id_7"/>
+  </variables>
+
+  <!-- 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+     ORCHESTRATION LOGIC                                               
+     Set of activities coordinating the flow of messages across the    
+     services integrated within this business process                  
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  -->
+  <sequence name="main" xml:id="id_8">
+
+    <!-- Receive input from requestor. (Note: This maps to operation defined in Iberia.wsdl) -->
+    <receive name="receiveInput" partnerLink="iberia_client" portType="client:Iberia" operation="process" variable="inputVariable" createInstance="yes"
+             xml:id="id_9"/>
+    <if name="checkDate" xml:id="id_10">
+      <documentation xml:id="id_11">
+        <![CDATA[Correct]]>
+      </documentation>
+      <condition xml:id="id_12">($inputVariable.payload/client:end_date &gt;= $inputVariable.payload/client:start_date) and ($inputVariable.payload/client:start_date &gt;= xp20:current-date())</condition>
+      <empty name="Empty1" xml:id="id_13"/>
+      <else xml:id="id_14">
+        <documentation xml:id="id_15">
+          <![CDATA[Incorrect]]>
+        </documentation>
+        <throw name="ErrorDATE" faultName="bpel:invalidVariables" faultVariable="inputVariable" xml:id="id_16">
+          <bpelx:annotation xml:id="id_17">
+            <bpelx:documentation xml:id="id_18">
+              <![CDATA[Las fechas son incorrectas. Han de ser mayores que la actual. Y la fecha de vuelta mayor que la fecha de vuelta]]>
+            </bpelx:documentation>
+          </bpelx:annotation>
+        </throw>
+      </else>
+    </if>
+    <if name="employee_class" xml:id="id_19">
+      <documentation xml:id="id_20">
+        <![CDATA[JET PRIVADO]]>
+      </documentation>
+      <condition xml:id="id_21">xp20:upper-case($inputVariable.payload/client:employee_class)='JET PRIVADO'</condition>
+      <assign name="x6" xml:id="id_22">
+        <copy xml:id="id_23">
+          <from xml:id="id_24">(xp20:day-from-dateTime($inputVariable.payload/client:end_date) + xp20:day-from-dateTime($inputVariable.payload/client:start_date)) * 6</from>
+          <to expressionLanguage="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0" xml:id="id_25">$outputVariable.payload/client:price</to>
+        </copy>
+      </assign>
+      <elseif xml:id="id_26">
+        <documentation xml:id="id_27">
+          <![CDATA[BUSINESS]]>
+        </documentation>
+        <condition xml:id="id_28">xp20:upper-case($inputVariable.payload/client:employee_class)='BUSINESS'</condition>
+        <assign name="x3" xml:id="id_29">
+          <copy xml:id="id_30">
+            <from xml:id="id_31">(xp20:day-from-dateTime($inputVariable.payload/client:end_date) + xp20:day-from-dateTime($inputVariable.payload/client:start_date)) * 3</from>
+            <to expressionLanguage="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0" xml:id="id_32">$outputVariable.payload/client:price</to>
+          </copy>
+        </assign>
+      </elseif>
+      <else xml:id="id_33">
+        <documentation xml:id="id_34">
+          <![CDATA[Other]]>
+        </documentation>
+        <assign name="x2" xml:id="id_35">
+          <copy xml:id="id_36">
+            <from xml:id="id_37">(xp20:day-from-dateTime($inputVariable.payload/client:end_date) + xp20:day-from-dateTime($inputVariable.payload/client:start_date)) * 2</from>
+            <to expressionLanguage="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0" xml:id="id_38">$outputVariable.payload/client:price</to>
+          </copy>
+        </assign>
+      </else>
+    </if>
+    <if name="aeropuerto" xml:id="id_39">
+      <documentation xml:id="id_40">
+        <![CDATA[MAD]]>
+      </documentation>
+      <condition xml:id="id_41">xp20:upper-case($inputVariable.payload/client:aeropuerto)='MAD'</condition>
+      <assign name="x20" xml:id="id_42">
+        <copy xml:id="id_43">
+          <from xml:id="id_44">$outputVariable.payload/client:price * 20</from>
+          <to expressionLanguage="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0" xml:id="id_45">$outputVariable.payload/client:price</to>
+        </copy>
+      </assign>
+      <elseif xml:id="id_46">
+        <documentation xml:id="id_47">
+          <![CDATA[BCN]]>
+        </documentation>
+        <condition xml:id="id_48">xp20:upper-case($inputVariable.payload/client:aeropuerto)='BCN'</condition>
+        <assign name="x40" xml:id="id_49">
+          <copy xml:id="id_50">
+            <from xml:id="id_51">$outputVariable.payload/client:price * 40</from>
+            <to expressionLanguage="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0" xml:id="id_52">$outputVariable.payload/client:price</to>
+          </copy>
+        </assign>
+      </elseif>
+      <else xml:id="id_53">
+        <documentation xml:id="id_54">
+          <![CDATA[Other]]>
+        </documentation>
+        <assign name="x60" xml:id="id_55">
+          <copy xml:id="id_56">
+            <from xml:id="id_57">$outputVariable.payload/client:price * 60</from>
+            <to expressionLanguage="urn:oasis:names:tc:wsbpel:2.0:sublang:xpath1.0" xml:id="id_58">$outputVariable.payload/client:price</to>
+          </copy>
+        </assign>
+      </else>
+    </if>
+    <!-- Generate reply to synchronous request -->
+    <reply name="replyOutput" partnerLink="iberia_client" portType="client:Iberia" operation="process" variable="outputVariable"
+           xml:id="id_59"/>
+  </sequence>
+</process>
